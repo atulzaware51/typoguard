@@ -75,6 +75,7 @@ def scan_url(
         scheme=parsed["scheme"],
         path=parsed["path"],
         query=parsed["query"],
+        trusted_domains=trusted_domains,
     )
 
     # Step 8: Return all scan results.

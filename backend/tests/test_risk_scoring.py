@@ -242,3 +242,50 @@ def test_empty_domain_is_rejected():
 
     with pytest.raises(ValueError):
         detect_typo("", "google.com")
+
+
+def test_misleading_subdomain_prefix_triggers_signal():
+    result = calculate_risk(
+        domain="google.com.attacker.com",
+        is_trusted=False,
+        similar_domains=[],
+        trusted_domains=["google.com"],
+    )
+    assert result["risk_score"] == 35
+    assert result["risk_level"] == "Moderate"
+    assert any(s["code"] == "misleading_subdomain" for s in result["signals"])
+
+
+def test_punycode_unicode_lookalike_detected_and_elevated():
+    # Cyrillic 'а' lookalike for apple.com
+    result = calculate_risk(
+        domain="xn--pple-43d.com",
+        is_trusted=False,
+        similar_domains=[],
+        trusted_domains=["apple.com"],
+    )
+    assert result["risk_score"] == 35
+    assert result["risk_level"] == "Moderate"
+    assert any(s["code"] == "punycode_lookalike" for s in result["signals"])
+
+
+def test_unrelated_domain_with_complex_diff_suppresses_lookalike_false_positive():
+    # example.com has an 80% Levenshtein ratio with apple.com but multiple/complex changes
+    similar = [{
+        "trusted_domain": "apple.com",
+        "similarity_score": 80.0,
+        "typo_analysis": {
+            "typo_type": "multiple_or_complex_changes",
+            "changes": [{"type": "multiple_or_complex_changes"}],
+        },
+    }]
+    result = calculate_risk(
+        domain="example.com",
+        is_trusted=False,
+        similar_domains=similar,
+        trusted_domains=["apple.com"],
+    )
+    # Both character_changes and high_domain_similarity are suppressed
+    assert result["risk_score"] == 18
+    assert result["risk_level"] == "Low"
+    assert not any(s["code"] == "character_changes" for s in result["signals"])
