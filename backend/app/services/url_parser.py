@@ -50,7 +50,9 @@ def parse_url(url: str) -> dict:
         scheme = parsed.scheme.lower()
         if scheme not in {"http", "https"}:
             raise ValueError("URL scheme must be http or https")
-        authority = parsed.netloc.rsplit("@", 1)[-1]
+        if "@" in parsed.netloc or parsed.username is not None or parsed.password is not None:
+            raise ValueError("Invalid URL: URL credentials are not permitted")
+        authority = parsed.netloc
         if authority.endswith(":"):
             raise ValueError("Invalid URL: port number is empty")
         raw_hostname = parsed.hostname

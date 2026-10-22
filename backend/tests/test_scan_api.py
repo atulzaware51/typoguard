@@ -27,6 +27,9 @@ def test_invalid_scan_urls_return_400_and_empty_body_returns_422(tmp_path):
             "https://not a valid host",
             "https://",
             "https://example.com:",
+            "https://user:pass@example.com/",
+            "https://user@example.com/",
+            "https://@example.com/",
         ]:
             with pytest.raises(HTTPException) as error:
                 scan_url(URLScanRequest(url=url), session)

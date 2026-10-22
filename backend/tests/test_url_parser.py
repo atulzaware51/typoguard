@@ -40,6 +40,19 @@ def test_reject_invalid_urls(url):
         parse_url(url)
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://user:pass@example.com/",
+        "https://user@example.com/",
+        "https://@example.com/",
+    ],
+)
+def test_reject_credential_urls(url):
+    with pytest.raises(ValueError, match="URL credentials are not permitted"):
+        parse_url(url)
+
+
 def test_valid_ports_and_idn_are_normalized_to_punycode():
     assert parse_url("https://example.com:443")['port'] == 443
     assert parse_url("https://bücher.de")["hostname"] == "xn--bcher-kva.de"
