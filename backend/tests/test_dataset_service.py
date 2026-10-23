@@ -51,14 +51,15 @@ def test_missing_csv_has_actionable_error(monkeypatch, tmp_path, db_session):
         dataset_service.load_trusted_domains(db_session)
 
 
-def test_missing_dataset_endpoint_returns_actionable_400(monkeypatch, tmp_path, db_session):
+def test_missing_dataset_endpoint_returns_safe_service_unavailable(monkeypatch, tmp_path, db_session):
     monkeypatch.setattr(dataset_service, "DATASET_PATH", tmp_path / "missing.csv")
 
     with pytest.raises(HTTPException) as error:
         import_trusted_domains(db_session)
 
-    assert error.value.status_code == 400
-    assert "Restore dataset/trusted_domains.csv" in error.value.detail
+    assert error.value.status_code == 503
+    assert error.value.detail == "Trusted-domain dataset is unavailable."
+    assert str(tmp_path) not in error.value.detail
 
 
 @pytest.mark.parametrize(

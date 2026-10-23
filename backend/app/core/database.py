@@ -1,4 +1,5 @@
 # Import the Path class from pathlib to work with file paths in an object-oriented way
+import os
 from pathlib import Path
 
 # Import create_engine to manage the connection to the database
@@ -16,7 +17,13 @@ from sqlalchemy.orm import declarative_base, sessionmaker
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 # DATABASE_PATH: Combines the base directory with the SQLite database filename "typoguard.db".
-DATABASE_PATH = BASE_DIR / "typoguard.db"
+def database_path_from_env() -> Path:
+    """Return the configured SQLite file path or the local development default."""
+    configured_path = os.getenv("TYPOGUARD_SQLITE_PATH", "").strip()
+    return Path(configured_path).expanduser() if configured_path else BASE_DIR / "typoguard.db"
+
+
+DATABASE_PATH = database_path_from_env()
 
 # DATABASE_URL: Formats the path into a standard database connection string (connection URI).
 # as_posix(): Converts Windows backslashes (\) into forward slashes (/) required for database URIs.
@@ -25,10 +32,13 @@ DATABASE_URL = f"sqlite:///{DATABASE_PATH.as_posix()}"
 # engine: The core entry point that handles communication with the SQLite database.
 # create_engine: Creates a new engine instance using the database URL.
 # connect_args={"check_same_thread": False}: Needed only for SQLite so multiple HTTP requests can share the same database connection.
-engine = create_engine(
-    DATABASE_URL,
-    connect_args={"check_same_thread": False},
-)
+def create_database_engine(database_url: str = DATABASE_URL):
+    """Create an engine with SQLite's thread setting when using SQLite."""
+    connect_args = {"check_same_thread": False} if database_url.startswith("sqlite:") else {}
+    return create_engine(database_url, connect_args=connect_args)
+
+
+engine = create_database_engine()
 
 # SessionLocal: A factory function that creates new database session objects.
 # sessionmaker: Configures how new database sessions will behave.

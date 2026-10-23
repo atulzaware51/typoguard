@@ -1,4 +1,4 @@
-﻿# Python
+# Python
 __pycache__/
 *.py[cod]
 *.pyd
@@ -45,3 +45,6 @@ Thumbs.db
 
 # Generated source-code inventory
 /backend/all_python_files.txt
+
+# Evaluation harness generated reports (keep cases.json and runner tracked)
+/evaluation/results/

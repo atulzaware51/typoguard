@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.rate_limit import enforce_scan_rate_limit
 from app.models.domain import TrustedDomain
 from app.schemas.scan import URLScanRequest, URLScanResponse
 from app.services.url_parser import parse_url, normalize_domain
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/api/scan", tags=["URL Scanner"])
 def scan_url(
     request: URLScanRequest,
     db: Session = Depends(get_db),
+    _: None = Depends(enforce_scan_rate_limit),
 ):
     """Parse a URL, compare its domain, and calculate a risk score."""
 

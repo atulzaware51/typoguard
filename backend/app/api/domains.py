@@ -11,6 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
+from app.core.security import require_admin_secret
 from app.models.domain import TrustedDomain
 from app.services.dataset_service import (
     DATASET_PATH,
@@ -39,6 +40,7 @@ router = APIRouter(
 @router.post("/import")
 def import_trusted_domains(
     db: Session = Depends(get_db),
+    _: None = Depends(require_admin_secret),
 ):
     """
     Import or update trusted domains using the CSV dataset.
@@ -51,14 +53,20 @@ def import_trusted_domains(
         # Call the CSV import service using the injected session.
         return load_trusted_domains(db)
 
-    except (ValueError, FileNotFoundError) as exc:
+    except FileNotFoundError as exc:
         # Roll back pending changes after a validation or file error.
         db.rollback()
 
-        # Return a clear client error instead of a server traceback.
+        # Keep deployment filesystem paths out of the public response.
+        raise HTTPException(
+            status_code=503,
+            detail="Trusted-domain dataset is unavailable.",
+        ) from exc
+    except ValueError as exc:
+        db.rollback()
         raise HTTPException(
             status_code=400,
-            detail=str(exc),
+            detail="Trusted-domain dataset is invalid.",
         ) from exc
 
 
